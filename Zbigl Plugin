@@ -1,0 +1,178 @@
+﻿<?php
+/*
+Plugin Name: Zbigl Plugin
+Plugin URI: http://zbigl.pl
+Description: Wszystko co mi jest potrzebne.
+Version: 1.0.1
+Author: Zbigl Adamski
+Author URI: http://www.eBiznes-Praktycznie.pl
+License:  GPL2
+*/
+
+/*  Copyright 2014  Zbigniew Adamski  (email : aikizbysio@go2.pl)
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License, version 2, as
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+
+//  CSS FILE
+//  wywoluje funkcje main_css w momencie uzycia w szablonie funkcji wp_head, w efekcie mamy link do css w sekcji head strony
+/* (WYŁĄCZONE - chyba powoduje awarię pluginu)
+add_action('wp_head', 'main_css');
+
+//  funkcja wyświetlająca linijkę dołączającą arkusz styli CSS
+    function main_css()
+{
+    echo '<link rel="stylesheet" href="'.plugins_url( 'css/css.css', __FILE__ ).'" type="text/css" media="screen" />';
+}
+//
+
+/**
+ * Shortcode wyświetlające domyślną nazwę użytkownika
+ * [dane]{{empty}}[/dane]
+ */
+
+add_shortcode('dane', 'pokaz_dane');
+function pokaz_dane(){
+    $user = wp_get_current_user();
+    return $user->display_name;
+}
+/*
+[USER_META meta="first_name"]
+[USER_META meta="last_name"]
+ */
+add_shortcode('USER_META', 'user_meta_shortcode_handler');
+/**
+ * User Meta Shortcode handler
+ * usage: meta="first_name"] 
+ * user meta: first_name, last_name, 
+ * @param  array $atts   
+ * @param  string $content
+ * @return stirng
+ */
+function user_meta_shortcode_handler($atts, $content=null){
+$current_user_id = get_current_user_id();
+	return esc_html(get_user_meta($current_user_id, $atts['meta'], true));
+}
+/**
+ * Wyświetli wszystkie dane meta zalogowanego użytkownika
+ * 
+*/
+add_shortcode('ALL_META', 'all_user_meta_shortcode');
+function all_user_meta_shortcode($atts, $content=null){
+  $current_user_id = get_current_user_id();
+  $all_meta_for_user = get_user_meta( $current_user_id );
+  print_r( $all_meta_for_user );
+}
+/**
+ * Wyświetli wszystko po "echo"
+ * 
+*/
+add_shortcode('LINK', 'link_css');
+//  funkcja wyświetlająca napis po "echo"
+    function link_css()
+{
+    echo 'Witaj cześć co słychać';
+}
+/**
+ * Shortcode do przycisków
+ * 
+*/
+add_shortcode( 'button', 'button_sc_func' );
+function button_sc_func($atts, $content = null) {
+
+    $atts = shortcode_atts(array('size' => '',
+                                 'color' => 'blue',
+                                 'link' => '#',
+                                 'window' => ''), $atts);
+    $size   = $atts['size'];
+    $color  = $atts['color'];
+    $link   = $atts['link'];
+    $window = $atts['window'];
+    $color_output = '';
+    $class = '';
+    if (  $color == "red"   OR $color == "orange" OR
+          $color == "green" OR $color == "blue" OR
+          $color == "pink"  OR $color == "black") {
+        $class = $color;
+    } else {
+        $color_output = ' style="background:'.$color.
+                        ';border-color:'.$color.'"';
+    }
+    $class_output = $class . ($size ? ' '.$size : '');
+    if ( $window )
+        $window = 'target="_blank" ';
+        $output = '<a class="ex-button ' . $class_output .
+            '" href="' . $link . '">'. $content . '</a>';
+    return $output;
+}
+function my_enqueue_scripts() {
+    wp_enqueue_style( 'shortcode-button',
+		get_template_directory_uri().'/css/shortcode-button.css');
+}
+add_action( 'wp_enqueue_scripts', 'my_enqueue_scripts' );
+/**
+* koniec kodu przycisku
+*/
+
+/**
+* shortcode wyświetlający imię np. w templatce
+* do strony dodać <?php echo do_shortcode("[IMIE]"); ?>
+ */
+ add_shortcode( 'IMIE', 'user_first_name' );
+function user_first_name(){
+$current_user_id = get_current_user_id();
+	return get_user_meta($current_user_id, 'first_name', true);
+}
+/*
+ * Difrent Menu after login - Zbigniew Adamski
+ *
+ */
+
+function my_wp_nav_menu_args( $args = '' ) {
+
+if( is_user_logged_in() ) { 
+array(
+      'menu' => __( 'zalogowany' ),
+      'sidebar-menu' => __( 'sidebar-menu' )
+    );
+
+} else { 
+	$args['menu'] = 'wylogowany';
+} 
+	return $args;
+}
+add_filter( 'wp_nav_menu_args', 'my_wp_nav_menu_args' );
+
+/**
+ * Wyświetlanie dzisiejszej daty po polsku w menu
+ */
+
+add_filter('wp_nav_menu_items','add_todaysdate_in_menu', 10, 2);
+function add_todaysdate_in_menu( $items, $args ) {
+    if( $args->theme_location == 'primary')  {
+    $dzien = date('d');
+$dzien_tyg = date('l');
+$miesiac = date('n');
+$rok = date('Y');
+
+$miesiac_pl = array(1 => 'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia');
+
+$dzien_tyg_pl = array('Monday' => 'poniedziałek', 'Tuesday' => 'wtorek', 'Wednesday' => 'środa', 'Thursday' => 'czwartek', 'Friday' => 'piątek', 'Saturday' => 'sobota', 'Sunday' => 'niedziela');
+
+$items .= '<li style="color:magenta;"><strong>' . $dzien_tyg_pl[$dzien_tyg].", ".$dzien." ".$miesiac_pl[$miesiac]." ".$rok."r.". '   </strong></li>';
+	}
+    return $items;
+}
+?>
